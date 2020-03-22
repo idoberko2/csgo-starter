@@ -91,3 +91,13 @@ func (do *Do) waitForIP(ctx context.Context, dropletID int) (string, error) {
 
 	return ip, nil
 }
+
+// StopDroplet stops the droplet identified by dropletID
+func (do *Do) StopDroplet(ctx context.Context, dropletID int) error {
+	_, err := do.client.Droplets.Delete(ctx, dropletID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -68,3 +68,23 @@ func (rnr *Runner) Start(ctx context.Context) error {
 		ContainerID: containerID,
 	})
 }
+
+// Stop stops the CS:GO server
+func (rnr *Runner) Stop(ctx context.Context) error {
+	state, err := rnr.stateDAO.GetState()
+	if err != nil {
+		return err
+	}
+
+	if state.Mode == ModeIdle {
+		return ErrServerIdle{}
+	}
+
+	do := services.NewDo(os.Getenv("DO_TOKEN"))
+	err = do.StopDroplet(ctx, state.DropletID)
+	if err != nil {
+		return err
+	}
+
+	return rnr.stateDAO.SetState(&State{})
+}
