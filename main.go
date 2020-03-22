@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"csgo-starter/services"
-	"os"
+	"csgo-starter/server"
 
 	"github.com/joho/godotenv"
 
@@ -14,26 +13,13 @@ func main() {
 	godotenv.Load()
 	ctx := context.Background()
 	log.SetLevel(log.DebugLevel)
-	do := services.NewDo(os.Getenv("DO_TOKEN"))
-	ip, did, err := do.StartDroplet(ctx)
+
+	runner := server.NewRunner()
+
+	err := runner.Start(ctx)
 	if err != nil {
-		log.WithError(err).Fatal("Error creating droplet")
+		log.WithError(err).Error("Error starting server")
+	} else {
+		log.Info("Success")
 	}
-
-	log.WithFields(log.Fields{
-		"ip":        ip,
-		"dropletID": did,
-	}).Info("Started droplet")
-
-	dock, err := services.NewDocker(ip)
-	if err != nil {
-		log.WithError(err).Fatal("Error connecting to docker engine")
-	}
-
-	containerID, err := dock.StartContainer(ctx)
-	if err != nil {
-		log.WithError(err).Fatal("Error initializing docker container")
-	}
-
-	_ = containerID
 }
