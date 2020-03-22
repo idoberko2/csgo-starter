@@ -62,8 +62,10 @@ func (dock *Docker) waitAndPull(ctx context.Context) error {
 	return backoff.Retry(func() error {
 		var err error
 
+		log.Debug("Trying to pull image...")
 		reader, err := dock.client.ImagePull(ctx, "docker.io/cm2network/csgo:latest", types.ImagePullOptions{})
 		if err != nil {
+			log.WithError(err).Debug("Failed pulling image")
 			return err
 		}
 		io.Copy(os.Stdout, reader)
