@@ -22,39 +22,39 @@ func NewRunner() *Runner {
 }
 
 // Start starts the server
-func (rnr *Runner) Start(ctx context.Context) error {
-	err := rnr.stateDAO.SetStartingState()
+func (rnr *Runner) Start(ctx context.Context) (*State, error) {
+	_, err := rnr.stateDAO.SetStartingState()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	do := services.NewDo(os.Getenv("DO_TOKEN"))
 	ip, did, err := do.StartDroplet(ctx)
 	if err != nil {
-		return errors.Wrap(err, "Error creating droplet")
+		return nil, errors.Wrap(err, "Error creating droplet")
 	}
 
 	log.WithFields(log.Fields{
 		"ip":        ip,
 		"dropletID": did,
 	}).Info("Started droplet")
-	err = rnr.stateDAO.SetState(&State{
+	_, err = rnr.stateDAO.SetState(&State{
 		Mode:      ModeStarting,
 		DropletID: did,
 		DropletIP: ip,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dock, err := services.NewDocker(ip)
 	if err != nil {
-		return errors.Wrap(err, "Error connecting to docker engine")
+		return nil, errors.Wrap(err, "Error connecting to docker engine")
 	}
 
 	containerID, err := dock.StartContainer(ctx)
 	if err != nil {
-		return errors.Wrap(err, "Error initializing docker container")
+		return nil, errors.Wrap(err, "Error initializing docker container")
 	}
 
 	log.WithFields(log.Fields{
@@ -86,5 +86,10 @@ func (rnr *Runner) Stop(ctx context.Context) error {
 		return err
 	}
 
-	return rnr.stateDAO.SetState(&State{})
+	_, err = rnr.stateDAO.SetState(&State{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

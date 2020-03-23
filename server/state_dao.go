@@ -54,34 +54,41 @@ func unprotectedGetState() (*State, error) {
 }
 
 // SetState writes the server's state
-func (dao *StateDAO) SetState(state *State) error {
+func (dao *StateDAO) SetState(state *State) (*State, error) {
 	dao.mutex.Lock()
 	defer dao.mutex.Unlock()
 
 	return unprotectedSetState(state)
 }
 
-func unprotectedSetState(state *State) error {
+func unprotectedSetState(state *State) (*State, error) {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return ioutil.WriteFile("data/state.json", data, os.ModePerm)
+	err = ioutil.WriteFile("data/state.json", data, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	return state, nil
 }
 
 // SetStartingState checks server's mode and starts if not already started atomically
-func (dao *StateDAO) SetStartingState() error {
+func (dao *StateDAO) SetStartingState() (*State, error) {
 	dao.mutex.Lock()
 	defer dao.mutex.Unlock()
 
 	state, err := unprotectedGetState()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if state.Mode > ModeIdle {
-		return ErrServerStarted{}
+		return nil, ErrServerStarted{
+			IP: state.DropletIP,
+		}
 	}
 
 	starting := State{
