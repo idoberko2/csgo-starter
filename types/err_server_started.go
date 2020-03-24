@@ -1,4 +1,4 @@
-package server
+package types
 
 // ErrServerStarted states the server already started
 type ErrServerStarted struct {

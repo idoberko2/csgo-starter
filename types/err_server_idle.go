@@ -1,4 +1,4 @@
-package server
+package types
 
 // ErrServerIdle states the server is idle
 type ErrServerIdle struct{}

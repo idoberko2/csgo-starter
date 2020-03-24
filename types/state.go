@@ -1,4 +1,4 @@
-package server
+package types
 
 // State stores information about the CS:GO server
 type State struct {

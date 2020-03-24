@@ -1,6 +1,7 @@
 package server
 
 import (
+	"csgo-starter/types"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -23,18 +24,18 @@ func NewStateDAO() *StateDAO {
 }
 
 // GetState reads the server's state
-func (dao *StateDAO) GetState() (*State, error) {
+func (dao *StateDAO) GetState() (*types.State, error) {
 	dao.mutex.Lock()
 	defer dao.mutex.Unlock()
 
 	return unprotectedGetState()
 }
 
-func unprotectedGetState() (*State, error) {
+func unprotectedGetState() (*types.State, error) {
 	jsonFile, err := os.Open("data/state.json")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return &State{}, nil
+			return &types.State{}, nil
 		}
 		return nil, err
 	}
@@ -45,7 +46,7 @@ func unprotectedGetState() (*State, error) {
 		return nil, err
 	}
 
-	state := State{}
+	state := types.State{}
 	if err := json.Unmarshal(bytes, &state); err != nil {
 		return nil, err
 	}
@@ -54,14 +55,14 @@ func unprotectedGetState() (*State, error) {
 }
 
 // SetState writes the server's state
-func (dao *StateDAO) SetState(state *State) (*State, error) {
+func (dao *StateDAO) SetState(state *types.State) (*types.State, error) {
 	dao.mutex.Lock()
 	defer dao.mutex.Unlock()
 
 	return unprotectedSetState(state)
 }
 
-func unprotectedSetState(state *State) (*State, error) {
+func unprotectedSetState(state *types.State) (*types.State, error) {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return nil, err
@@ -76,7 +77,7 @@ func unprotectedSetState(state *State) (*State, error) {
 }
 
 // SetStartingState checks server's mode and starts if not already started atomically
-func (dao *StateDAO) SetStartingState() (*State, error) {
+func (dao *StateDAO) SetStartingState() (*types.State, error) {
 	dao.mutex.Lock()
 	defer dao.mutex.Unlock()
 
@@ -85,14 +86,14 @@ func (dao *StateDAO) SetStartingState() (*State, error) {
 		return nil, err
 	}
 
-	if state.Mode > ModeIdle {
-		return nil, ErrServerStarted{
+	if state.Mode > types.ModeIdle {
+		return nil, types.ErrServerStarted{
 			IP: state.DropletIP,
 		}
 	}
 
-	starting := State{
-		Mode: ModeStarting,
+	starting := types.State{
+		Mode: types.ModeStarting,
 	}
 
 	return unprotectedSetState(&starting)

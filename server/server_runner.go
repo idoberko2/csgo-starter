@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"csgo-starter/services"
+	"csgo-starter/types"
 	"os"
 
 	"github.com/pkg/errors"
@@ -22,7 +23,7 @@ func NewRunner() *Runner {
 }
 
 // Start starts the server
-func (rnr *Runner) Start(ctx context.Context) (*State, error) {
+func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
 	_, err := rnr.stateDAO.SetStartingState()
 	if err != nil {
 		return nil, err
@@ -38,8 +39,8 @@ func (rnr *Runner) Start(ctx context.Context) (*State, error) {
 		"ip":        ip,
 		"dropletID": did,
 	}).Info("Started droplet")
-	_, err = rnr.stateDAO.SetState(&State{
-		Mode:      ModeStarting,
+	_, err = rnr.stateDAO.SetState(&types.State{
+		Mode:      types.ModeStarting,
 		DropletID: did,
 		DropletIP: ip,
 	})
@@ -61,8 +62,8 @@ func (rnr *Runner) Start(ctx context.Context) (*State, error) {
 		"containerID": containerID,
 	}).Info("Started container")
 
-	return rnr.stateDAO.SetState(&State{
-		Mode:        ModeStarted,
+	return rnr.stateDAO.SetState(&types.State{
+		Mode:        types.ModeStarted,
 		DropletID:   did,
 		DropletIP:   ip,
 		ContainerID: containerID,
@@ -76,8 +77,8 @@ func (rnr *Runner) Stop(ctx context.Context) error {
 		return err
 	}
 
-	if state.Mode == ModeIdle {
-		return ErrServerIdle{}
+	if state.Mode == types.ModeIdle {
+		return types.ErrServerIdle{}
 	}
 
 	do := services.NewDo(os.Getenv("DO_TOKEN"))
@@ -86,7 +87,7 @@ func (rnr *Runner) Stop(ctx context.Context) error {
 		return err
 	}
 
-	_, err = rnr.stateDAO.SetState(&State{})
+	_, err = rnr.stateDAO.SetState(&types.State{})
 	if err != nil {
 		return err
 	}

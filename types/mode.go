@@ -1,4 +1,4 @@
-package server
+package types
 
 // Mode represents the current server operation mode
 type Mode int
