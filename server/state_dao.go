@@ -3,10 +3,11 @@ package server
 import (
 	"csgo-starter/types"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // StateDAO is in charge of persisting the server's state

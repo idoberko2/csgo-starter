@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"csgo-starter/types"
-	"errors"
 	"os"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
@@ -68,5 +71,23 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 }
 
 func isValidChat(chat *tgbotapi.Chat) bool {
-	return true
+	allowedChatIDs := os.Getenv("ALLOWED_CHAT_IDS")
+	if allowedChatIDs == "" {
+		return true
+	}
+
+	for _, strchatid := range strings.Split(allowedChatIDs, ",") {
+		chatid, err := strconv.ParseInt(strchatid, 10, 64)
+		if err != nil {
+			log.WithField("chatid", strchatid).Error("Invalid chat id")
+		}
+
+		if chat.ID == chatid {
+			return true
+		}
+	}
+
+	log.WithField("chatid", chat.ID).Debug("Chat ID is not allowed")
+
+	return false
 }
