@@ -35,7 +35,7 @@ func (dao *StateDAO) GetState() (*types.State, error) {
 func unprotectedGetState() (*types.State, error) {
 	jsonFile, err := os.Open("data/state.json")
 	if err != nil {
-		if errors.As(err, os.ErrNotExist) {
+		if errors.Is(err, os.ErrNotExist) {
 			return &types.State{}, nil
 		}
 		return nil, err
