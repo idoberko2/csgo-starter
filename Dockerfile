@@ -13,9 +13,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/
 
 FROM alpine:latest
 
-RUN mkdir /app
+RUN mkdir data
 
 # Copy the binary from previous build stage and run
-COPY --from=builder /go/bin/csgo-starter /app
-WORKDIR /app
+COPY --from=builder /go/bin/csgo-starter .
 ENTRYPOINT [ "./csgo-starter" ]
