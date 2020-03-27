@@ -4,6 +4,7 @@ import (
 	"context"
 	"csgo-starter/types"
 	"errors"
+	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 	}).Debug("Received message")
 
 	if isValidChat(update.Message.Chat) {
-		if update.Message.Text == "/startserver" {
+		if update.Message.Text == "/startserver" || update.Message.Text == "/startserver@"+os.Getenv("TG_BOT_NAME") {
 			// initial response since it might be a long action
 			r.Bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "סרג'יו קוסטנזה לשירותך המפקד!"))
 
