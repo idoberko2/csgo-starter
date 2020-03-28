@@ -12,13 +12,17 @@ import (
 
 // Runner is in charge of running the CS:GO server
 type Runner struct {
-	stateDAO *StateDAO
+	stateDAO      types.StateDAO
+	dockerCreator types.DockerCreator
+	do            types.DigitalOcean
 }
 
 // NewRunner generates a new instance of Runner
 func NewRunner() *Runner {
 	return &Runner{
-		stateDAO: NewStateDAO(),
+		stateDAO:      NewStateDAO(),
+		dockerCreator: &services.DockerCreator{},
+		do:            services.NewDo(os.Getenv("DO_TOKEN")),
 	}
 }
 
@@ -29,8 +33,7 @@ func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
 		return nil, err
 	}
 
-	do := services.NewDo(os.Getenv("DO_TOKEN"))
-	ip, did, err := do.StartDroplet(ctx)
+	ip, did, err := rnr.do.StartDroplet(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating droplet")
 	}
@@ -48,7 +51,7 @@ func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
 		return nil, err
 	}
 
-	dock, err := services.NewDocker(ip)
+	dock, err := rnr.dockerCreator.Create(ip)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error connecting to docker engine")
 	}
@@ -81,8 +84,7 @@ func (rnr *Runner) Stop(ctx context.Context) error {
 		return types.ErrServerIdle{}
 	}
 
-	do := services.NewDo(os.Getenv("DO_TOKEN"))
-	err = do.StopDroplet(ctx, state.DropletID)
+	err = rnr.do.StopDroplet(ctx, state.DropletID)
 	if err != nil {
 		return err
 	}
