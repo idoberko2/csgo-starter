@@ -19,19 +19,6 @@ type Docker struct {
 	client *client.Client
 }
 
-// NewDocker generates a new Docker instance
-func NewDocker(ip string) (*Docker, error) {
-	dockerClient, err := client.NewClient("http://"+ip+":2375", "1.40", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("Created docker client successfully")
-
-	return &Docker{
-		client: dockerClient,
-	}, nil
-}
-
 // StartContainer starts the CS:GO container
 func (dock *Docker) StartContainer(ctx context.Context) (string, error) {
 	err := dock.waitAndPull(ctx)

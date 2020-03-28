@@ -46,7 +46,7 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 				// starting server
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP)
 			}
-		} else if update.Message.Text == "/stopserver" {
+		} else if update.Message.Text == "/stopserver" || update.Message.Text == "/stopserver@"+os.Getenv("TG_BOT_NAME") {
 			err := r.Runner.Stop(ctx)
 			if err != nil && errors.As(err, &types.ErrServerIdle{}) {
 				// server is not running
@@ -61,6 +61,7 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 			}
 		} else {
 			log.WithField("msg", update.Message.Text).Debug("Ignoring")
+			return
 		}
 	} else {
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Not allowed")
@@ -80,6 +81,7 @@ func isValidChat(chat *tgbotapi.Chat) bool {
 		chatid, err := strconv.ParseInt(strchatid, 10, 64)
 		if err != nil {
 			log.WithField("chatid", strchatid).Error("Invalid chat id")
+			return false
 		}
 
 		if chat.ID == chatid {

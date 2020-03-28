@@ -13,8 +13,12 @@ import (
 // Run runs the app
 func Run() {
 	godotenv.Load()
+	isDebug := os.Getenv("DEBUG_MODE") != ""
 	ctx := context.Background()
-	log.SetLevel(log.DebugLevel)
+
+	if isDebug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	runner := server.NewRunner()
 
@@ -23,7 +27,9 @@ func Run() {
 		log.WithError(err).Fatal("Error creating Bot API")
 	}
 
-	bot.Debug = true
+	if isDebug {
+		bot.Debug = true
+	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
