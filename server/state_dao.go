@@ -94,7 +94,7 @@ func (dao *StateDAO) SetStartingState() (*types.State, error) {
 	}
 
 	starting := types.State{
-		Mode: types.ModeStarting,
+		Mode: types.ModeStartingDroplet,
 	}
 
 	return unprotectedSetState(&starting)

@@ -19,6 +19,39 @@ type Docker struct {
 	client *client.Client
 }
 
+//  Update state (0x61) downloading, progress: 98.47 (24447265031 / 24827773544)
+//  Update state (0x61) downloading, progress: 98.65 (24492240398 / 24827773544)
+//  Update state (0x61) downloading, progress: 98.81 (24532047166 / 24827773544)
+//  Update state (0x61) downloading, progress: 98.96 (24569868334 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.07 (24597954452 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.19 (24626266004 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.40 (24677958411 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.56 (24718313668 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.68 (24747560956 / 24827773544)
+//  Update state (0x61) downloading, progress: 99.87 (24796179593 / 24827773544)
+// RecordSteamInterfaceCreation (PID 67): SteamGameServer012 / GameServer
+// RecordSteamInterfaceCreation (PID 67): SteamUtils008 / Utils
+// RecordSteamInterfaceCreation (PID 67): SteamNetworking005 / Networking
+// RecordSteamInterfaceCreation (PID 67): SteamGameServerStats001 / GameServerStats
+// RecordSteamInterfaceCreation (PID 67): STEAMHTTP_INTERFACE_VERSION002 / HTTP
+// RecordSteamInterfaceCreation (PID 67): STEAMINVENTORY_INTERFACE_V001 / Inventory
+// RecordSteamInterfaceCreation (PID 67): STEAMUGC_INTERFACE_VERSION008 / UGC
+// RecordSteamInterfaceCreation (PID 67): STEAMAPPS_INTERFACE_VERSION008 / Apps
+// RecordSteamInterfaceCreation (PID 67): SteamUtils009 / Utils
+// RecordSteamInterfaceCreation (PID 67): SteamNetworkingSocketsSerialized003 /
+// RecordSteamInterfaceCreation (PID 67): SteamGameServer012 / GameServer
+// RecordSteamInterfaceCreation (PID 67): STEAMHTTP_INTERFACE_VERSION003 / HTTP
+// RecordSteamInterfaceCreation (PID 67): SteamGameServer012 / GameServer
+// RecordSteamInterfaceCreation (PID 67): SteamUtils008 / Utils
+// RecordSteamInterfaceCreation (PID 67): SteamNetworking005 / Networking
+// RecordSteamInterfaceCreation (PID 67): SteamGameServerStats001 / GameServerStats
+// RecordSteamInterfaceCreation (PID 67): STEAMHTTP_INTERFACE_VERSION002 / HTTP
+// RecordSteamInterfaceCreation (PID 67): STEAMINVENTORY_INTERFACE_V001 / Inventory
+// RecordSteamInterfaceCreation (PID 67): STEAMUGC_INTERFACE_VERSION008 / UGC
+// RecordSteamInterfaceCreation (PID 67): STEAMAPPS_INTERFACE_VERSION008 / Apps
+// RecordSteamInterfaceCreation (PID 67): SteamGameCoordinator001 /
+// RecordSteamInterfaceCreation (PID 67): SteamGameServer012 / GameServer
+
 // StartContainer starts the CS:GO container
 func (dock *Docker) StartContainer(ctx context.Context) (string, error) {
 	err := dock.waitAndPull(ctx)

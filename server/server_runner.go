@@ -43,7 +43,7 @@ func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
 		"dropletID": did,
 	}).Info("Started droplet")
 	_, err = rnr.stateDAO.SetState(&types.State{
-		Mode:      types.ModeStarting,
+		Mode:      types.ModeStartingDroplet,
 		DropletID: did,
 		DropletIP: ip,
 	})
@@ -66,7 +66,7 @@ func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
 	}).Info("Started container")
 
 	return rnr.stateDAO.SetState(&types.State{
-		Mode:        types.ModeStarted,
+		Mode:        types.ModeStartingContainer,
 		DropletID:   did,
 		DropletIP:   ip,
 		ContainerID: containerID,

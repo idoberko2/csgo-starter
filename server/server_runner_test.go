@@ -16,7 +16,7 @@ func TestStart(t *testing.T) {
 		DropletID:   1234,
 		ContainerID: "containerid",
 		DropletIP:   "2.2.2.2",
-		Mode:        types.ModeStarted,
+		Mode:        types.ModeStartingContainer,
 	}
 
 	stateDAO := mocks.StateDAO{}
