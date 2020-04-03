@@ -7,11 +7,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestStart(t *testing.T) {
 	ctx := context.Background()
+	initState := &types.State{
+		DropletID:   0,
+		ContainerID: "",
+		DropletIP:   "",
+		Mode:        types.ModeStartingDroplet,
+	}
+	dropletCreatedState := &types.State{
+		Mode:      types.ModeStartedDroplet,
+		DropletID: 1234,
+		DropletIP: "2.2.2.2",
+	}
 	exState := &types.State{
 		DropletID:   1234,
 		ContainerID: "containerid",
@@ -20,8 +30,9 @@ func TestStart(t *testing.T) {
 	}
 
 	stateDAO := mocks.StateDAO{}
-	stateDAO.On("SetStartingState").Return(nil, nil)
-	stateDAO.On("SetState", mock.Anything).Return(exState, nil)
+	stateDAO.On("SetStartingState").Return(initState, nil)
+	stateDAO.On("SetState", dropletCreatedState).Return(dropletCreatedState, nil)
+	stateDAO.On("SetState", exState).Return(exState, nil)
 
 	do := mocks.DigitalOcean{}
 	do.On("StartDroplet", ctx).Return("2.2.2.2", 1234, nil)
@@ -38,8 +49,35 @@ func TestStart(t *testing.T) {
 		dockerCreator: &dockerCreator,
 	}
 
-	actualState, err := runner.Start(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, exState, actualState)
+	stateChan := make(chan types.State, 1)
+	errChan := make(chan error, 1)
+
+	receivedStates := []types.State{}
+	go runner.Start(ctx, stateChan, errChan)
+
+	for stateChan != nil && errChan != nil {
+		select {
+		case state := <-stateChan:
+			{
+				t.Log(state)
+				receivedStates = append(receivedStates, state)
+				if state.Mode == types.ModeStartingContainer {
+					stateChan = nil
+					// t.FailNow()
+				}
+			}
+		case err := <-errChan:
+			{
+				t.Fatal("Unexpected error: ", err)
+				errChan = nil
+			}
+		}
+	}
+
+	assert.Equal(t, []types.State{
+		*initState,
+		*dropletCreatedState,
+		*exState,
+	}, receivedStates)
 	stateDAO.AssertCalled(t, "SetState", exState)
 }

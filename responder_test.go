@@ -62,6 +62,7 @@ func TestRespond_start(t *testing.T) {
 			input: "/startserver",
 			returnedState: &types.State{
 				DropletIP: "1.1.1.1",
+				Mode:      types.ModeStartedDroplet,
 			},
 			returnedError: nil,
 			expected: []tgbotapi.MessageConfig{
@@ -80,6 +81,7 @@ func TestRespond_start(t *testing.T) {
 			input: "/startserver@botname",
 			returnedState: &types.State{
 				DropletIP: "1.1.1.1",
+				Mode:      types.ModeStartedDroplet,
 			},
 			returnedError: nil,
 			expected: []tgbotapi.MessageConfig{
@@ -101,7 +103,17 @@ func TestRespond_start(t *testing.T) {
 			bot.On("Send", mock.Anything).Return(nil, nil)
 
 			runner := mocks.ServerRunner{}
-			runner.On("Start", mock.Anything).Return(tC.returnedState, tC.returnedError)
+			runner.On("Start", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				stateChan := args.Get(1).(chan types.State)
+				errChan := args.Get(2).(chan error)
+
+				if tC.returnedState != nil {
+					stateChan <- *tC.returnedState
+				}
+				if tC.returnedError != nil {
+					errChan <- tC.returnedError
+				}
+			})
 
 			responder := Responder{
 				Runner: &runner,
@@ -118,7 +130,7 @@ func TestRespond_start(t *testing.T) {
 				},
 			})
 
-			runner.AssertCalled(t, "Start", context.Background())
+			runner.AssertCalled(t, "Start", context.Background(), mock.Anything, mock.Anything)
 			if !bot.AssertNumberOfCalls(t, "Send", len(tC.expected)) {
 				t.FailNow()
 			}

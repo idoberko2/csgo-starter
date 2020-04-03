@@ -10,6 +10,9 @@ const (
 	// ModeStartingDroplet droplet is starting
 	ModeStartingDroplet
 
+	// ModeStartedDroplet droplet is started
+	ModeStartedDroplet
+
 	// ModeStartingContainer container is starting
 	ModeStartingContainer
 

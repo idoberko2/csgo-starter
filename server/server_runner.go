@@ -27,50 +27,63 @@ func NewRunner() *Runner {
 }
 
 // Start starts the server
-func (rnr *Runner) Start(ctx context.Context) (*types.State, error) {
-	_, err := rnr.stateDAO.SetStartingState()
+func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errChan chan error) {
+	state, err := rnr.stateDAO.SetStartingState()
 	if err != nil {
-		return nil, err
+		errChan <- err
+		return
 	}
+	stateChan <- *state
 
 	ip, did, err := rnr.do.StartDroplet(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating droplet")
+		errChan <- errors.Wrap(err, "Error creating droplet")
+		return
 	}
 
 	log.WithFields(log.Fields{
 		"ip":        ip,
 		"dropletID": did,
 	}).Info("Started droplet")
-	_, err = rnr.stateDAO.SetState(&types.State{
-		Mode:      types.ModeStartingDroplet,
+	state, err = rnr.stateDAO.SetState(&types.State{
+		Mode:      types.ModeStartedDroplet,
 		DropletID: did,
 		DropletIP: ip,
 	})
 	if err != nil {
-		return nil, err
+		errChan <- err
+		return
 	}
+	stateChan <- *state
 
 	dock, err := rnr.dockerCreator.Create(ip)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error connecting to docker engine")
+		errChan <- errors.Wrap(err, "Error connecting to docker engine")
+		return
 	}
 
 	containerID, err := dock.StartContainer(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error initializing docker container")
+		errChan <- errors.Wrap(err, "Error initializing docker container")
+		return
 	}
 
 	log.WithFields(log.Fields{
 		"containerID": containerID,
 	}).Info("Started container")
 
-	return rnr.stateDAO.SetState(&types.State{
+	state, err = rnr.stateDAO.SetState(&types.State{
 		Mode:        types.ModeStartingContainer,
 		DropletID:   did,
 		DropletIP:   ip,
 		ContainerID: containerID,
 	})
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	stateChan <- *state
 }
 
 // Stop stops the CS:GO server
