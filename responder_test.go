@@ -74,6 +74,13 @@ func TestRespond_start(t *testing.T) {
 					},
 					Text: "השרת מתחיל...\n1.1.1.1",
 				},
+				tgbotapi.MessageConfig{
+					BaseChat: tgbotapi.BaseChat{
+						ChatID:           chatid,
+						ReplyToMessageID: messageid,
+					},
+					Text: "השרת מוכן, יאללה לקמפר",
+				},
 			},
 		},
 		{
@@ -93,6 +100,13 @@ func TestRespond_start(t *testing.T) {
 					},
 					Text: "השרת מתחיל...\n1.1.1.1",
 				},
+				tgbotapi.MessageConfig{
+					BaseChat: tgbotapi.BaseChat{
+						ChatID:           chatid,
+						ReplyToMessageID: messageid,
+					},
+					Text: "השרת מוכן, יאללה לקמפר",
+				},
 			},
 		},
 	}
@@ -109,6 +123,12 @@ func TestRespond_start(t *testing.T) {
 
 				if tC.returnedState != nil {
 					stateChan <- *tC.returnedState
+					// otherwise, code will never finish
+					if tC.returnedState.Mode != types.ModeReady {
+						stateChan <- types.State{
+							Mode: types.ModeReady,
+						}
+					}
 				}
 				if tC.returnedError != nil {
 					errChan <- tC.returnedError

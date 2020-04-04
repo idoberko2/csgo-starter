@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestStart(t *testing.T) {
@@ -22,23 +23,48 @@ func TestStart(t *testing.T) {
 		DropletID: 1234,
 		DropletIP: "2.2.2.2",
 	}
-	exState := &types.State{
+	contStartState := &types.State{
 		DropletID:   1234,
 		ContainerID: "containerid",
 		DropletIP:   "2.2.2.2",
 		Mode:        types.ModeStartingContainer,
 	}
+	prog50 := &types.State{
+		DropletID:   1234,
+		ContainerID: "containerid",
+		DropletIP:   "2.2.2.2",
+		Progress:    50,
+		Mode:        types.ModeContainerProgress,
+	}
+	prog80 := &types.State{
+		DropletID:   1234,
+		ContainerID: "containerid",
+		DropletIP:   "2.2.2.2",
+		Progress:    80,
+		Mode:        types.ModeContainerProgress,
+	}
+	readyState := &types.State{
+		DropletID:   1234,
+		ContainerID: "containerid",
+		DropletIP:   "2.2.2.2",
+		Progress:    100,
+		Mode:        types.ModeReady,
+	}
 
 	stateDAO := mocks.StateDAO{}
 	stateDAO.On("SetStartingState").Return(initState, nil)
 	stateDAO.On("SetState", dropletCreatedState).Return(dropletCreatedState, nil)
-	stateDAO.On("SetState", exState).Return(exState, nil)
+	stateDAO.On("SetState", contStartState).Return(contStartState, nil)
+	stateDAO.On("SetState", prog50).Return(prog50, nil)
+	stateDAO.On("SetState", prog80).Return(prog80, nil)
+	stateDAO.On("SetState", readyState).Return(readyState, nil)
 
 	do := mocks.DigitalOcean{}
 	do.On("StartDroplet", ctx).Return("2.2.2.2", 1234, nil)
 
 	docker := mocks.Docker{}
 	docker.On("StartContainer", ctx).Return("containerid", nil)
+	docker.On("WaitProgress", ctx, mock.Anything).Return(nil)
 
 	dockerCreator := mocks.DockerCreator{}
 	dockerCreator.On("Create", "2.2.2.2").Return(&docker, nil)
@@ -59,11 +85,9 @@ func TestStart(t *testing.T) {
 		select {
 		case state := <-stateChan:
 			{
-				t.Log(state)
 				receivedStates = append(receivedStates, state)
-				if state.Mode == types.ModeStartingContainer {
+				if state.Mode == types.ModeReady {
 					stateChan = nil
-					// t.FailNow()
 				}
 			}
 		case err := <-errChan:
@@ -77,7 +101,9 @@ func TestStart(t *testing.T) {
 	assert.Equal(t, []types.State{
 		*initState,
 		*dropletCreatedState,
-		*exState,
+		*prog50,
+		*prog80,
+		*readyState,
 	}, receivedStates)
-	stateDAO.AssertCalled(t, "SetState", exState)
+	stateDAO.AssertCalled(t, "SetState", contStartState)
 }
