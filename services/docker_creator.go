@@ -19,6 +19,7 @@ func (d *DockerCreator) Create(ip string) (types.Docker, error) {
 	log.Debug("Created docker client successfully")
 
 	return &Docker{
-		client: dockerClient,
+		client:   dockerClient,
+		progChan: make(chan int, 1),
 	}, nil
 }

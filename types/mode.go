@@ -7,11 +7,17 @@ const (
 	// ModeIdle server is not running
 	ModeIdle Mode = iota
 
-	// ModeStarting server is starting
-	ModeStarting
+	// ModeStartingDroplet droplet is starting
+	ModeStartingDroplet
 
-	// ModeStarted droplet and container started
-	ModeStarted
+	// ModeStartedDroplet droplet is started
+	ModeStartedDroplet
+
+	// ModeStartingContainer container is starting
+	ModeStartingContainer
+
+	// ModeContainerProgress container has started and making progress
+	ModeContainerProgress
 
 	// ModeReady server is running and can be joined
 	ModeReady

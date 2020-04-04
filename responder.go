@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"csgo-starter/types"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -19,10 +20,79 @@ type Responder struct {
 	Bot    types.Sender
 }
 
+func (r *Responder) reply(chatID int64, text string, messageID int) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	if messageID > 0 {
+		msg.ReplyToMessageID = messageID
+	}
+
+	r.Bot.Send(msg)
+}
+
+func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
+	stateChan := make(chan types.State, 1)
+	errChan := make(chan error, 1)
+
+	// initial response since it might be a long action
+	r.Bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "סרג'יו קוסטנזה לשירותך המפקד!"))
+
+	go r.Runner.Start(ctx, stateChan, errChan)
+
+	for stateChan != nil && errChan != nil {
+		select {
+		case state := <-stateChan:
+			{
+				if state.Mode == types.ModeStartedDroplet {
+					// starting server
+					r.reply(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP, update.Message.MessageID)
+				}
+				if state.Mode == types.ModeContainerProgress {
+					r.reply(update.Message.Chat.ID, fmt.Sprintf("התקדמות: %d%%", state.Progress), update.Message.MessageID)
+				}
+				if state.Mode == types.ModeReady {
+					r.reply(update.Message.Chat.ID, ("השרת מוכן, יאללה לקמפר"), update.Message.MessageID)
+					stateChan = nil
+				}
+			}
+		case err := <-errChan:
+			{
+				if errors.As(err, &types.ErrServerStarted{}) {
+					// server already started
+					errIP := err.(types.ErrServerStarted)
+					r.reply(update.Message.Chat.ID, "השרת כבר רץ\n"+errIP.IP, update.Message.MessageID)
+				} else {
+					// unknown error
+					log.WithError(err).Error("An error occurred")
+					r.reply(update.Message.Chat.ID, "קרתה שגיאה", update.Message.MessageID)
+				}
+
+				errChan = nil
+			}
+		}
+	}
+}
+
+func (r *Responder) handleStop(ctx context.Context, update tgbotapi.Update) {
+	var msg tgbotapi.MessageConfig
+	err := r.Runner.Stop(ctx)
+	if err != nil && errors.As(err, &types.ErrServerIdle{}) {
+		// server is not running
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת לא רץ. מה אתה רוצה שאעצור?!")
+	} else if err != nil {
+		// unknown error
+		log.WithError(err).Error("An error occurred")
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "קרתה שגיאה")
+	} else {
+		// stopping server
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "לילה טוב!")
+	}
+
+	msg.ReplyToMessageID = update.Message.MessageID
+	r.Bot.Send(msg)
+}
+
 // Respond responds to messages
 func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
-	var msg tgbotapi.MessageConfig
-
 	log.WithFields(log.Fields{
 		"chat": update.Message.Chat,
 		"text": update.Message.Text,
@@ -30,43 +100,18 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 
 	if isValidChat(update.Message.Chat) {
 		if update.Message.Text == "/startserver" || update.Message.Text == "/startserver@"+os.Getenv("TG_BOT_NAME") {
-			// initial response since it might be a long action
-			r.Bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "סרג'יו קוסטנזה לשירותך המפקד!"))
-
-			state, err := r.Runner.Start(ctx)
-			if err != nil && errors.As(err, &types.ErrServerStarted{}) {
-				// server already started
-				errIP := err.(types.ErrServerStarted)
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת כבר רץ\n"+errIP.IP)
-			} else if err != nil {
-				// unknown error
-				log.WithError(err).Error("An error occurred")
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "קרתה שגיאה")
-			} else {
-				// starting server
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP)
-			}
+			r.handleStart(ctx, update)
+			return
 		} else if update.Message.Text == "/stopserver" || update.Message.Text == "/stopserver@"+os.Getenv("TG_BOT_NAME") {
-			err := r.Runner.Stop(ctx)
-			if err != nil && errors.As(err, &types.ErrServerIdle{}) {
-				// server is not running
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת לא רץ. מה אתה רוצה שאעצור?!")
-			} else if err != nil {
-				// unknown error
-				log.WithError(err).Error("An error occurred")
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "קרתה שגיאה")
-			} else {
-				// stopping server
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "לילה טוב!")
-			}
+			r.handleStop(ctx, update)
+			return
 		} else {
 			log.WithField("msg", update.Message.Text).Debug("Ignoring")
 			return
 		}
-	} else {
-		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Not allowed")
 	}
 
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Not allowed")
 	msg.ReplyToMessageID = update.Message.MessageID
 	r.Bot.Send(msg)
 }

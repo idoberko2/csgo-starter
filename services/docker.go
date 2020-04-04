@@ -1,9 +1,13 @@
 package services
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strconv"
 
 	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
@@ -16,7 +20,8 @@ import (
 
 // Docker is in charge of interacting with docker engine API
 type Docker struct {
-	client *client.Client
+	client   *client.Client
+	progChan chan int
 }
 
 // StartContainer starts the CS:GO container
@@ -42,7 +47,60 @@ func (dock *Docker) StartContainer(ctx context.Context) (string, error) {
 
 	log.Debug("Started docker container successfully")
 
+	go dock.checkProgress(ctx, resp.ID)
+
 	return resp.ID, nil
+}
+
+func (dock *Docker) checkProgress(ctx context.Context, cid string) error {
+	reader, err := dock.client.ContainerLogs(ctx, cid, types.ContainerLogsOptions{
+		ShowStdout: true,
+		Follow:     true,
+	})
+	if err != nil {
+		log.WithError(err).Error("Error getting docker logs")
+		return err
+	}
+	defer reader.Close()
+
+	progRegex := regexp.MustCompile(`Update state \(0x\d+\) downloading, progress: (?P<progress>\d*\.\d*).*`)
+	doneRegex := regexp.MustCompile(`weapon_sound_falloff_multiplier \- 1\.0`)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		log.WithField("line", scanner.Text()).Debug("Scanned line")
+		if progRegex.Match(scanner.Bytes()) {
+			matches := progRegex.FindStringSubmatch(scanner.Text())
+			log.WithField("matches", matches).Debug("Found matches")
+			progStr := matches[1]
+			progress, err := strconv.ParseFloat(progStr, 64)
+			if err != nil {
+				log.WithError(err).Error("Error parsing progress")
+				return err
+			}
+			log.WithField("progress", progress).Debug("Updating progress")
+			dock.progChan <- int(progress)
+		}
+
+		if doneRegex.Match(scanner.Bytes()) {
+			dock.progChan <- 100
+			log.Debug("Last progress line")
+			break
+		}
+	}
+
+	return nil
+}
+
+// WaitProgress returns when the container starting progress reaches n
+func (dock *Docker) WaitProgress(ctx context.Context, n int) error {
+	for curProgress := range dock.progChan {
+		log.WithField("curProgress", curProgress).Debug("Progress...")
+		if curProgress >= n {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Channel is closed without reaching %d", n)
 }
 
 func (dock *Docker) waitAndPull(ctx context.Context) error {
