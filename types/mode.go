@@ -16,6 +16,9 @@ const (
 	// ModeStartingContainer container is starting
 	ModeStartingContainer
 
+	// ModeContainerProgress container has started and making progress
+	ModeContainerProgress
+
 	// ModeReady server is running and can be joined
 	ModeReady
 

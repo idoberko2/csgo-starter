@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"csgo-starter/types"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -19,9 +20,16 @@ type Responder struct {
 	Bot    types.Sender
 }
 
-func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
-	var msg tgbotapi.MessageConfig
+func (r *Responder) reply(chatID int64, text string, messageID int) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	if messageID > 0 {
+		msg.ReplyToMessageID = messageID
+	}
 
+	r.Bot.Send(msg)
+}
+
+func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 	stateChan := make(chan types.State, 1)
 	errChan := make(chan error, 1)
 
@@ -36,7 +44,13 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 			{
 				if state.Mode == types.ModeStartedDroplet {
 					// starting server
-					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP)
+					r.reply(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP, update.Message.MessageID)
+				}
+				if state.Mode == types.ModeContainerProgress {
+					r.reply(update.Message.Chat.ID, fmt.Sprintf("התקדמות: %d%%", state.Progress), update.Message.MessageID)
+				}
+				if state.Mode == types.ModeReady {
+					r.reply(update.Message.Chat.ID, ("השרת מוכן, יאללה לקמפר"), update.Message.MessageID)
 					stateChan = nil
 				}
 			}
@@ -45,20 +59,17 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 				if errors.As(err, &types.ErrServerStarted{}) {
 					// server already started
 					errIP := err.(types.ErrServerStarted)
-					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת כבר רץ\n"+errIP.IP)
+					r.reply(update.Message.Chat.ID, "השרת כבר רץ\n"+errIP.IP, update.Message.MessageID)
 				} else {
 					// unknown error
 					log.WithError(err).Error("An error occurred")
-					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "קרתה שגיאה")
+					r.reply(update.Message.Chat.ID, "קרתה שגיאה", update.Message.MessageID)
 				}
 
 				errChan = nil
 			}
 		}
 	}
-
-	msg.ReplyToMessageID = update.Message.MessageID
-	r.Bot.Send(msg)
 }
 
 func (r *Responder) handleStop(ctx context.Context, update tgbotapi.Update) {
