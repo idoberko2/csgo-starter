@@ -130,6 +130,8 @@ func getEnv() []string {
 		"SRCDS_MAXPLAYERS=14",
 		"SRCDS_STARTMAP=de_dust2",
 		"SRCDS_REGION=3",
+		"SRCDS_APPID=4465480",
+		"SRCDS_FORCE_VERSION=2000528",
 		"SRCDS_MAPGROUP=mg_active",
 		"SRCDS_TOKEN=" + os.Getenv("SRCDS_TOKEN"),
 	}
