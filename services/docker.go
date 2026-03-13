@@ -66,7 +66,7 @@ func (dock *Docker) checkProgress(ctx context.Context, cid string) error {
 	defer reader.Close()
 
 	progRegex := regexp.MustCompile(`Update state \(0x\d+\) downloading, progress: (?P<progress>\d*\.\d*).*`)
-	doneRegex := regexp.MustCompile(`SV:\s+\d+\s+player server started`)
+	doneRegex := regexp.MustCompile(`Connection to Steam servers successful`)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		log.WithField("line", scanner.Text()).Debug("Scanned line")
