@@ -18,6 +18,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const csgoDockerImage = "ghcr.io/idoberko2/csgo-legacy"
+
 // Docker is in charge of interacting with docker engine API
 type Docker struct {
 	client   *client.Client
@@ -32,9 +34,9 @@ func (dock *Docker) StartContainer(ctx context.Context) (string, error) {
 	}
 
 	resp, err := dock.client.ContainerCreate(ctx, &container.Config{
-		Image: "cm2network/csgo",
+		Image: csgoDockerImage,
 		Env:   getEnv(),
-	}, getHostConfig(), nil, "cs")
+	}, getHostConfig(), nil, "csgo")
 	if err != nil {
 		return "", errors.Wrap(err, "Error creating container")
 	}
@@ -64,7 +66,7 @@ func (dock *Docker) checkProgress(ctx context.Context, cid string) error {
 	defer reader.Close()
 
 	progRegex := regexp.MustCompile(`Update state \(0x\d+\) downloading, progress: (?P<progress>\d*\.\d*).*`)
-	doneRegex := regexp.MustCompile(`weapon_sound_falloff_multiplier \- 1\.0`)
+	doneRegex := regexp.MustCompile(`SV:\s+\d+\s+player server started`)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		log.WithField("line", scanner.Text()).Debug("Scanned line")
@@ -108,7 +110,7 @@ func (dock *Docker) waitAndPull(ctx context.Context) error {
 		var err error
 
 		log.Debug("Trying to pull image...")
-		reader, err := dock.client.ImagePull(ctx, "docker.io/cm2network/csgo:latest", types.ImagePullOptions{})
+		reader, err := dock.client.ImagePull(ctx, csgoDockerImage+":latest", types.ImagePullOptions{})
 		if err != nil {
 			log.WithError(err).Debug("Failed pulling image")
 			return err
@@ -123,25 +125,22 @@ func getEnv() []string {
 	return []string{
 		"SRCDS_RCONPW=" + os.Getenv("SRCDS_RCONPW"),
 		"SRCDS_PW=" + os.Getenv("SRCDS_PW"),
+		"SRCDS_TOKEN=" + os.Getenv("SRCDS_TOKEN"),
 		"SRCDS_PORT=27015",
 		"SRCDS_TV_PORT=27020",
-		"SRCDS_FPSMAX=300",
-		"SRCDS_TICKRATE=128",
 		"SRCDS_MAXPLAYERS=14",
 		"SRCDS_STARTMAP=de_dust2",
-		"SRCDS_REGION=3",
-		"SRCDS_APPID=4465480",
-		"SRCDS_FORCE_VERSION=2000528",
 		"SRCDS_MAPGROUP=mg_active",
-		"SRCDS_TOKEN=" + os.Getenv("SRCDS_TOKEN"),
+		"SRCDS_TICKRATE=128",
+		"SRCDS_STOP_UPDATE=1",
 	}
 }
 
 func getHostConfig() *container.HostConfig {
 	return &container.HostConfig{
 		PortBindings: nat.PortMap{
-			"27015": []nat.PortBinding{{HostPort: "27015"}},
-			"27020": []nat.PortBinding{{HostPort: "27020"}},
+			"27015/tcp": []nat.PortBinding{{HostPort: "27015"}},
+			"27015/udp": []nat.PortBinding{{HostPort: "27015"}},
 		},
 		NetworkMode: container.NetworkMode("host"),
 	}
