@@ -124,6 +124,10 @@ func (dock *Docker) WaitProgress(ctx context.Context, n int) error {
 	for curProgress := range dock.progChan {
 		log.WithField("curProgress", curProgress).Debug("Progress...")
 		if curProgress >= n {
+			// Re-queue the progress for the next WaitProgress call if we overshot
+			if curProgress > n {
+				dock.progChan <- curProgress
+			}
 			return nil
 		}
 	}
