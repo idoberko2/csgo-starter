@@ -79,7 +79,7 @@ func TestRespond_start(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "השרת מוכן, יאללה לקמפר",
+					Text: "השרת מוכן!\n\nTo connect, type the following in the dev console:\n`connect 1.1.1.1:27015; password `",
 				},
 			},
 		},
@@ -105,7 +105,7 @@ func TestRespond_start(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "השרת מוכן, יאללה לקמפר",
+					Text: "השרת מוכן!\n\nTo connect, type the following in the dev console:\n`connect 1.1.1.1:27015; password `",
 				},
 			},
 		},
@@ -126,7 +126,8 @@ func TestRespond_start(t *testing.T) {
 					// otherwise, code will never finish
 					if tC.returnedState.Mode != types.ModeReady {
 						stateChan <- types.State{
-							Mode: types.ModeReady,
+							Mode:      types.ModeReady,
+							DropletIP: tC.returnedState.DropletIP,
 						}
 					}
 				}

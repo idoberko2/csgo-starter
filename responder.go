@@ -50,7 +50,8 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 					r.reply(update.Message.Chat.ID, fmt.Sprintf("התקדמות: %d%%", state.Progress), update.Message.MessageID)
 				}
 				if state.Mode == types.ModeReady {
-					r.reply(update.Message.Chat.ID, ("השרת מוכן, יאללה לקמפר"), update.Message.MessageID)
+					readyMsg := fmt.Sprintf("השרת מוכן!\n\nTo connect, type the following in the dev console:\n`connect %s:27015; password %s`", state.DropletIP, os.Getenv("SRCDS_PW"))
+					r.reply(update.Message.Chat.ID, readyMsg, update.Message.MessageID)
 					stateChan = nil
 				}
 			}
