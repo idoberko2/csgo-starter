@@ -6,5 +6,6 @@ type State struct {
 	DropletIP   string `json:"dropletIp"`
 	ContainerID string `json:"containerId"`
 	Progress    int    `json:"progress"`
+	IsSnapshot  bool   `json:"isSnapshot"`
 	Mode        `json:"mode"`
 }

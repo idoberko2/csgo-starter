@@ -22,6 +22,7 @@ type Responder struct {
 
 func (r *Responder) reply(chatID int64, text string, messageID int) {
 	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "Markdown"
 	if messageID > 0 {
 		msg.ReplyToMessageID = messageID
 	}
@@ -44,7 +45,11 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 			{
 				if state.Mode == types.ModeStartedDroplet {
 					// starting server
-					r.reply(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP, update.Message.MessageID)
+					msg := "השרת מתחיל...\n" + state.DropletIP
+					if state.IsSnapshot {
+						msg += "\nמנסה להתחיל שרת מהיר, זה ייקח כמה דקות..."
+					}
+					r.reply(update.Message.Chat.ID, msg, update.Message.MessageID)
 				}
 				if state.Mode == types.ModeContainerProgress {
 					r.reply(update.Message.Chat.ID, fmt.Sprintf("התקדמות: %d%%", state.Progress), update.Message.MessageID)

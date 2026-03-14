@@ -46,9 +46,10 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		"dropletID": did,
 	}).Info("Started droplet")
 	state, err = rnr.stateDAO.SetState(&types.State{
-		Mode:      types.ModeStartedDroplet,
-		DropletID: did,
-		DropletIP: ip,
+		Mode:       types.ModeStartedDroplet,
+		DropletID:  did,
+		DropletIP:  ip,
+		IsSnapshot: fromSnapshot,
 	})
 	if err != nil {
 		errChan <- err
@@ -77,51 +78,54 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		DropletID:   did,
 		DropletIP:   ip,
 		ContainerID: containerID,
+		IsSnapshot:  fromSnapshot,
 	})
 	if err != nil {
 		errChan <- err
 		return
 	}
 
-	err = dock.WaitProgress(ctx, 50)
-	if err != nil {
-		errChan <- err
-		return
+	if !fromSnapshot {
+		err = dock.WaitProgress(ctx, 50)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		state, err = rnr.stateDAO.SetState(&types.State{
+			Mode:        types.ModeContainerProgress,
+			DropletID:   did,
+			DropletIP:   ip,
+			ContainerID: containerID,
+			Progress:    50,
+		})
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		stateChan <- *state
+
+		err = dock.WaitProgress(ctx, 80)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		state, err = rnr.stateDAO.SetState(&types.State{
+			Mode:        types.ModeContainerProgress,
+			DropletID:   did,
+			DropletIP:   ip,
+			ContainerID: containerID,
+			Progress:    80,
+		})
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		stateChan <- *state
 	}
-
-	state, err = rnr.stateDAO.SetState(&types.State{
-		Mode:        types.ModeContainerProgress,
-		DropletID:   did,
-		DropletIP:   ip,
-		ContainerID: containerID,
-		Progress:    50,
-	})
-	if err != nil {
-		errChan <- err
-		return
-	}
-
-	stateChan <- *state
-
-	err = dock.WaitProgress(ctx, 80)
-	if err != nil {
-		errChan <- err
-		return
-	}
-
-	state, err = rnr.stateDAO.SetState(&types.State{
-		Mode:        types.ModeContainerProgress,
-		DropletID:   did,
-		DropletIP:   ip,
-		ContainerID: containerID,
-		Progress:    80,
-	})
-	if err != nil {
-		errChan <- err
-		return
-	}
-
-	stateChan <- *state
 
 	err = dock.WaitProgress(ctx, 100)
 	if err != nil {
@@ -135,6 +139,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		DropletIP:   ip,
 		ContainerID: containerID,
 		Progress:    100,
+		IsSnapshot:  false,
 	})
 	if err != nil {
 		errChan <- err
