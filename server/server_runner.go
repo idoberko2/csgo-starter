@@ -35,7 +35,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 	}
 	stateChan <- *state
 
-	ip, did, err := rnr.do.StartDroplet(ctx)
+	ip, did, fromSnapshot, err := rnr.do.StartDroplet(ctx)
 	if err != nil {
 		errChan <- errors.Wrap(err, "Error creating droplet")
 		return
@@ -62,7 +62,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		return
 	}
 
-	containerID, err := dock.StartContainer(ctx)
+	containerID, err := dock.StartContainer(ctx, fromSnapshot)
 	if err != nil {
 		errChan <- errors.Wrap(err, "Error initializing docker container")
 		return

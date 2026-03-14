@@ -27,31 +27,57 @@ type Docker struct {
 }
 
 // StartContainer starts the CS:GO container
-func (dock *Docker) StartContainer(ctx context.Context) (string, error) {
-	err := dock.waitAndPull(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "Error pulling image")
+func (dock *Docker) StartContainer(ctx context.Context, fromSnapshot bool) (string, error) {
+	if !fromSnapshot {
+		err := dock.waitAndPull(ctx)
+		if err != nil {
+			return "", errors.Wrap(err, "Error pulling image")
+		}
+	} else {
+		log.Info("Starting from snapshot, skipping image pull")
 	}
 
-	resp, err := dock.client.ContainerCreate(ctx, &container.Config{
-		Image: csgoDockerImage,
-		Env:   getEnv(),
-	}, getHostConfig(), nil, "csgo")
+	containers, err := dock.client.ContainerList(ctx, types.ContainerListOptions{All: true})
 	if err != nil {
-		return "", errors.Wrap(err, "Error creating container")
+		return "", errors.Wrap(err, "Error listing containers")
 	}
 
-	log.Debug("Created docker container successfully")
+	var containerID string
+	for _, c := range containers {
+		for _, name := range c.Names {
+			if name == "/csgo" || name == "csgo" {
+				containerID = c.ID
+				break
+			}
+		}
+		if containerID != "" {
+			break
+		}
+	}
 
-	if err := dock.client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if containerID != "" {
+		log.WithField("containerID", containerID).Debug("Found existing container")
+	} else {
+		resp, err := dock.client.ContainerCreate(ctx, &container.Config{
+			Image: csgoDockerImage,
+			Env:   getEnv(),
+		}, getHostConfig(), nil, "csgo")
+		if err != nil {
+			return "", errors.Wrap(err, "Error creating container")
+		}
+		containerID = resp.ID
+		log.Debug("Created docker container successfully")
+	}
+
+	if err := dock.client.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
 		return "", errors.Wrap(err, "Error starting container")
 	}
 
 	log.Debug("Started docker container successfully")
 
-	go dock.checkProgress(ctx, resp.ID)
+	go dock.checkProgress(ctx, containerID)
 
-	return resp.ID, nil
+	return containerID, nil
 }
 
 func (dock *Docker) checkProgress(ctx context.Context, cid string) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
@@ -24,23 +25,39 @@ func NewDo(token string) *Do {
 }
 
 // StartDroplet starts a new Droplet adjusted for CS:GO
-func (do *Do) StartDroplet(ctx context.Context) (string, int, error) {
+func (do *Do) StartDroplet(ctx context.Context) (string, int, bool, error) {
 	var (
 		ip  string
 		err error
 	)
+
+	image := godo.DropletCreateImage{
+		Slug: "docker-18-04",
+	}
+	fromSnapshot := false
+
+	snapshotIDStr := os.Getenv("DO_SNAPSHOT_ID")
+	if snapshotIDStr != "" {
+		if snapshotID, err := strconv.Atoi(snapshotIDStr); err == nil {
+			image = godo.DropletCreateImage{
+				ID: snapshotID,
+			}
+			fromSnapshot = true
+		} else {
+			log.WithError(err).Warn("Invalid DO_SNAPSHOT_ID, falling back to base image")
+		}
+	}
+
 	createRequest := &godo.DropletCreateRequest{
 		Name:   "cs-go-droplet",
 		Region: "fra1",
 		Size:   "s-2vcpu-4gb",
 		SSHKeys: []godo.DropletCreateSSHKey{
-			godo.DropletCreateSSHKey{
+			{
 				Fingerprint: os.Getenv("DO_SSH_KEY_FP"),
 			},
 		},
-		Image: godo.DropletCreateImage{
-			Slug: "docker-18-04",
-		},
+		Image: image,
 		// required initialization of the droplet
 		UserData: `#cloud-config
 
@@ -53,16 +70,26 @@ runcmd:
 
 	newDroplet, _, err := do.client.Droplets.Create(ctx, createRequest)
 	if err != nil {
-		return "", 0, err
+		if fromSnapshot {
+			log.WithError(err).Warn("Failed to create droplet from snapshot, falling back to base image")
+			createRequest.Image = godo.DropletCreateImage{Slug: "docker-18-04"}
+			fromSnapshot = false
+			newDroplet, _, err = do.client.Droplets.Create(ctx, createRequest)
+			if err != nil {
+				return "", 0, false, err
+			}
+		} else {
+			return "", 0, false, err
+		}
 	}
 	dropletID := newDroplet.ID
 
 	ip, err = do.waitForIP(ctx, dropletID)
 	if err != nil {
-		return "", 0, err
+		return "", 0, false, err
 	}
 
-	return ip, dropletID, nil
+	return ip, dropletID, fromSnapshot, nil
 }
 
 func (do *Do) waitForIP(ctx context.Context, dropletID int) (string, error) {

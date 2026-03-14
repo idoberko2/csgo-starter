@@ -60,10 +60,10 @@ func TestStart(t *testing.T) {
 	stateDAO.On("SetState", readyState).Return(readyState, nil)
 
 	do := mocks.DigitalOcean{}
-	do.On("StartDroplet", ctx).Return("2.2.2.2", 1234, nil)
+	do.On("StartDroplet", ctx).Return("2.2.2.2", 1234, false, nil)
 
 	docker := mocks.Docker{}
-	docker.On("StartContainer", ctx).Return("containerid", nil)
+	docker.On("StartContainer", ctx, false).Return("containerid", nil)
 	docker.On("WaitProgress", ctx, mock.Anything).Return(nil)
 
 	dockerCreator := mocks.DockerCreator{}
