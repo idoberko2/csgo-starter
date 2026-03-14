@@ -37,6 +37,10 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 	// initial response since it might be a long action
 	r.Bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "סרג'יו קוסטנזה לשירותך המפקד!"))
 
+	if os.Getenv("DO_SNAPSHOT_ID") != "" {
+		r.reply(update.Message.Chat.ID, "מנסה להתחיל שרת מהיר, זה ייקח כמה דקות...", update.Message.MessageID)
+	}
+
 	go r.Runner.Start(ctx, stateChan, errChan)
 
 	for stateChan != nil && errChan != nil {
@@ -45,11 +49,7 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 			{
 				if state.Mode == types.ModeStartedDroplet {
 					// starting server
-					msg := "השרת מתחיל...\n" + state.DropletIP
-					if state.IsSnapshot {
-						msg += "\nמנסה להתחיל שרת מהיר, זה ייקח כמה דקות..."
-					}
-					r.reply(update.Message.Chat.ID, msg, update.Message.MessageID)
+					r.reply(update.Message.Chat.ID, "השרת מתחיל...\n"+state.DropletIP, update.Message.MessageID)
 				}
 				if state.Mode == types.ModeContainerProgress {
 					r.reply(update.Message.Chat.ID, fmt.Sprintf("התקדמות: %d%%", state.Progress), update.Message.MessageID)
@@ -79,22 +79,20 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 }
 
 func (r *Responder) handleStop(ctx context.Context, update tgbotapi.Update) {
-	var msg tgbotapi.MessageConfig
 	err := r.Runner.Stop(ctx)
 	if err != nil && errors.As(err, &types.ErrServerIdle{}) {
 		// server is not running
-		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "השרת לא רץ. מה אתה רוצה שאעצור?!")
+		r.reply(update.Message.Chat.ID, "השרת לא רץ. מה אתה רוצה שאעצור?!", update.Message.MessageID)
+		return
 	} else if err != nil {
 		// unknown error
 		log.WithError(err).Error("An error occurred")
-		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "קרתה שגיאה")
-	} else {
-		// stopping server
-		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "לילה טוב!")
+		r.reply(update.Message.Chat.ID, "קרתה שגיאה", update.Message.MessageID)
+		return
 	}
 
-	msg.ReplyToMessageID = update.Message.MessageID
-	r.Bot.Send(msg)
+	// stopping server
+	r.reply(update.Message.Chat.ID, "לילה טוב!", update.Message.MessageID)
 }
 
 // Respond responds to messages
@@ -117,9 +115,7 @@ func (r *Responder) Respond(ctx context.Context, update tgbotapi.Update) {
 		}
 	}
 
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Not allowed")
-	msg.ReplyToMessageID = update.Message.MessageID
-	r.Bot.Send(msg)
+	r.reply(update.Message.Chat.ID, "Not allowed", update.Message.MessageID)
 }
 
 func isValidChat(chat *tgbotapi.Chat) bool {

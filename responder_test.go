@@ -131,7 +131,15 @@ func TestRespond_start(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text:      "השרת מתחיל...\n1.1.1.1\nמנסה להתחיל שרת מהיר, זה ייקח כמה דקות...",
+					Text:      "מנסה להתחיל שרת מהיר, זה ייקח כמה דקות...",
+					ParseMode: "Markdown",
+				},
+				tgbotapi.MessageConfig{
+					BaseChat: tgbotapi.BaseChat{
+						ChatID:           chatid,
+						ReplyToMessageID: messageid,
+					},
+					Text:      "השרת מתחיל...\n1.1.1.1",
 					ParseMode: "Markdown",
 				},
 				tgbotapi.MessageConfig{
@@ -148,6 +156,10 @@ func TestRespond_start(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			os.Setenv("TG_BOT_NAME", "botname")
+			os.Setenv("DO_SNAPSHOT_ID", "")
+			if tC.desc == "start - snapshot" {
+				os.Setenv("DO_SNAPSHOT_ID", "12345")
+			}
 			bot := mocks.Sender{}
 			bot.On("Send", mock.Anything).Return(nil, nil)
 
@@ -219,7 +231,8 @@ func TestRespond_stop(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "השרת לא רץ. מה אתה רוצה שאעצור?!",
+					Text:      "השרת לא רץ. מה אתה רוצה שאעצור?!",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -233,7 +246,8 @@ func TestRespond_stop(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "קרתה שגיאה",
+					Text:      "קרתה שגיאה",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -247,7 +261,8 @@ func TestRespond_stop(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "לילה טוב!",
+					Text:      "לילה טוב!",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -261,7 +276,8 @@ func TestRespond_stop(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "לילה טוב!",
+					Text:      "לילה טוב!",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -269,6 +285,7 @@ func TestRespond_stop(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			os.Setenv("TG_BOT_NAME", "botname")
+			os.Setenv("DO_SNAPSHOT_ID", "")
 			bot := mocks.Sender{}
 			bot.On("Send", mock.Anything).Return(nil, nil)
 
@@ -353,7 +370,8 @@ func TestRespond_allowed(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "לילה טוב!",
+					Text:      "לילה טוב!",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -367,7 +385,8 @@ func TestRespond_allowed(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "Not allowed",
+					Text:      "Not allowed",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -381,7 +400,8 @@ func TestRespond_allowed(t *testing.T) {
 						ChatID:           chatid,
 						ReplyToMessageID: messageid,
 					},
-					Text: "Not allowed",
+					Text:      "Not allowed",
+					ParseMode: "Markdown",
 				},
 			},
 		},
@@ -389,6 +409,7 @@ func TestRespond_allowed(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			os.Setenv("ALLOWED_CHAT_IDS", tC.allowedChatIDs)
+			os.Setenv("DO_SNAPSHOT_ID", "")
 			bot := mocks.Sender{}
 			bot.On("Send", mock.Anything).Return(nil, nil)
 
