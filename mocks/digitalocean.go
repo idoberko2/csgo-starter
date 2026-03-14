@@ -12,10 +12,10 @@ type DigitalOcean struct {
 }
 
 // StartDroplet mock
-func (do *DigitalOcean) StartDroplet(ctx context.Context) (string, int, error) {
+func (do *DigitalOcean) StartDroplet(ctx context.Context) (string, int, bool, error) {
 	args := do.Called(ctx)
 
-	return args.String(0), args.Int(1), args.Error(2)
+	return args.String(0), args.Int(1), args.Bool(2), args.Error(3)
 }
 
 // StopDroplet mock

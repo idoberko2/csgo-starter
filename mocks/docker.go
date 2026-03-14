@@ -12,8 +12,8 @@ type Docker struct {
 }
 
 // StartContainer mock
-func (d *Docker) StartContainer(ctx context.Context) (string, error) {
-	args := d.Called(ctx)
+func (d *Docker) StartContainer(ctx context.Context, fromSnapshot bool) (string, error) {
+	args := d.Called(ctx, fromSnapshot)
 
 	return args.String(0), args.Error(1)
 }
