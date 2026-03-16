@@ -98,6 +98,9 @@ func (do *Do) waitForIP(ctx context.Context, dropletID int) (string, error) {
 	err := backoff.Retry(func() error {
 		var err error
 		droplet, _, err := do.client.Droplets.Get(ctx, dropletID)
+		if err != nil {
+			return err
+		}
 		log.Debug("Checking IP")
 		ip, err = droplet.PublicIPv4()
 		if err != nil {
