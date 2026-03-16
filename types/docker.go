@@ -6,4 +6,5 @@ import "context"
 type Docker interface {
 	StartContainer(ctx context.Context, fromSnapshot bool) (string, error)
 	WaitProgress(ctx context.Context, n int) error
+	Wait(ctx context.Context) error
 }

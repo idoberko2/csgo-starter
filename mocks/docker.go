@@ -24,3 +24,10 @@ func (d *Docker) WaitProgress(ctx context.Context, n int) error {
 
 	return args.Error(0)
 }
+
+// Wait mock
+func (d *Docker) Wait(ctx context.Context) error {
+	args := d.Called(ctx)
+
+	return args.Error(0)
+}

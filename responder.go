@@ -35,6 +35,7 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 	errChan := make(chan error, 1)
 
 	// initial response since it might be a long action
+	log.WithField("chat", update.Message.Chat.ID).Info("Received start command")
 	r.Bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "סרג'יו קוסטנזה לשירותך המפקד!"))
 
 	if os.Getenv("DO_SNAPSHOT_ID") != "" {
@@ -79,6 +80,7 @@ func (r *Responder) handleStart(ctx context.Context, update tgbotapi.Update) {
 }
 
 func (r *Responder) handleStop(ctx context.Context, update tgbotapi.Update) {
+	log.WithField("chat", update.Message.Chat.ID).Info("Received stop command")
 	err := r.Runner.Stop(ctx)
 	if err != nil && errors.As(err, &types.ErrServerIdle{}) {
 		// server is not running

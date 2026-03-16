@@ -101,7 +101,7 @@ func (do *Do) waitForIP(ctx context.Context, dropletID int) (string, error) {
 		if err != nil {
 			return err
 		}
-		log.Debug("Checking IP")
+		log.Info("Checking IP")
 		ip, err = droplet.PublicIPv4()
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func (do *Do) waitForIP(ctx context.Context, dropletID int) (string, error) {
 			log.Debug("IP is empty")
 			return errors.New("ip is empty")
 		}
-		log.WithField("ip", ip).Debug("Received IP")
+		log.WithField("ip", ip).Info("Received IP")
 
 		return nil
 	}, backoff.NewExponentialBackOff())

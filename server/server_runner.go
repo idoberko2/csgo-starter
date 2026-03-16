@@ -33,6 +33,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		errChan <- err
 		return
 	}
+	log.Info("Starting server...")
 	stateChan <- *state
 
 	ip, did, fromSnapshot, err := rnr.do.StartDroplet(ctx)
@@ -57,9 +58,16 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 	}
 	stateChan <- *state
 
+	log.WithField("ip", ip).Info("Connecting to docker engine")
 	dock, err := rnr.dockerCreator.Create(ip)
 	if err != nil {
 		errChan <- errors.Wrap(err, "Error connecting to docker engine")
+		return
+	}
+
+	err = dock.Wait(ctx)
+	if err != nil {
+		errChan <- errors.Wrap(err, "Error waiting for docker daemon")
 		return
 	}
 
@@ -99,6 +107,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 			ContainerID: containerID,
 			Progress:    50,
 		})
+		log.Info("Progress: 50%")
 		if err != nil {
 			errChan <- err
 			return
@@ -119,6 +128,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 			ContainerID: containerID,
 			Progress:    80,
 		})
+		log.Info("Progress: 80%")
 		if err != nil {
 			errChan <- err
 			return
@@ -141,6 +151,7 @@ func (rnr *Runner) Start(ctx context.Context, stateChan chan types.State, errCha
 		Progress:    100,
 		IsSnapshot:  false,
 	})
+	log.Info("Server is ready!")
 	if err != nil {
 		errChan <- err
 		return

@@ -135,6 +135,19 @@ func (dock *Docker) WaitProgress(ctx context.Context, n int) error {
 	return fmt.Errorf("Channel is closed without reaching %d", n)
 }
 
+// Wait waits for the docker daemon to be ready
+func (dock *Docker) Wait(ctx context.Context) error {
+	return backoff.Retry(func() error {
+		log.Info("Waiting for docker daemon...")
+		_, err := dock.client.Ping(ctx)
+		if err != nil {
+			log.WithError(err).Debug("Docker daemon not ready yet")
+			return err
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+}
+
 func (dock *Docker) waitAndPull(ctx context.Context) error {
 	return backoff.Retry(func() error {
 		var err error

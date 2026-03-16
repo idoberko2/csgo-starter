@@ -63,6 +63,7 @@ func TestStart(t *testing.T) {
 	do.On("StartDroplet", ctx).Return("2.2.2.2", 1234, false, nil)
 
 	docker := mocks.Docker{}
+	docker.On("Wait", ctx).Return(nil)
 	docker.On("StartContainer", ctx, false).Return("containerid", nil)
 	docker.On("WaitProgress", ctx, mock.Anything).Return(nil)
 
